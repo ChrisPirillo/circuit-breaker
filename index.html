@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCB (Pretend) Circuit Board Generator</title>
+    <meta name="description" content="Generate hyperrealistic PCB circuit board designs with customizable density, complexity, and colors. Explore intricate virtual electronics.">
+    <meta name="keywords" content="PCB, circuit board, generator, electronics, design, virtual, realistic, interactive, pretend board, circuit design, hardware, engineering">
+    <link rel="canonical" href="https://pirillo.com/arcade/circuit-breaker.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/circuit-breaker.html">
+    <meta property="og:title" content="PCB (Pretend) Circuit Board Generator">
+    <meta property="og:description" content="Generate hyperrealistic PCB circuit board designs with customizable density, complexity, and colors. Explore intricate virtual electronics.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/circuit-breaker.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pirillo.com/arcade/circuit-breaker.html">
+    <meta property="twitter:title" content="PCB (Pretend) Circuit Board Generator">
+    <meta property="twitter:description" content="Generate hyperrealistic PCB circuit board designs with customizable density, complexity, and colors. Explore intricate virtual electronics.">
+    <meta name="twitter:creator" content="@ChrisPirillo">
+    <meta name="author" content="Chris Pirillo">
+
+    <!-- Preload critical font resources -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcC73FwrK3iLTeHuS_fvQtMwCp5Pz-g.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- New font for techy feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        /* Critical CSS for initial render */
+        /* Basic reset and font import */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #111;
+            font-family: 'Inter', sans-serif;
+            color: #e0e0e0;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        /* Menu toggle button */
+        .menu-toggle {
+            position: fixed;
+            bottom: 20px; /* Changed from top */
+            left: 20px;
+            z-index: 11;
+            background: rgba(0,0,0,0.4); /* Increased transparency */
+            border: 2px solid #555;
+            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        .menu-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #888;
+        }
+        .menu-toggle .bar {
+            width: 28px;
+            height: 3px;
+            background-color: #fff;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        /* Animation for hamburger to 'X' */
+        .settings-panel.open ~ .menu-toggle .bar1 {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+        .settings-panel.open ~ .menu-toggle .bar2 {
+            opacity: 0;
+        }
+        .settings-panel.open ~ .menu-toggle .bar3 {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+        /* Side Panel for Controls */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 100%;
+            background: rgba(18, 18, 18, 0.85); /* Increased transparency */
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #444;
+            z-index: 10;
+            transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 20px 20px 20px; /* Adjusted top padding: Reduced from 40px to 20px */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace; /* Applied techy font */
+        }
+        .settings-panel.open {
+            transform: translateX(0);
+        }
+        /* Control Group Styling */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group label {
+            font-weight: bold;
+            font-size: 14px;
+            color: #ccc;
+        }
+        /* Centering "Controls" heading */
+        .settings-panel h2 {
+            text-align: center;
+            margin-bottom: 15px; /* Add some space below the heading */
+        }
+        /* General Button Styling */
+        .btn {
+            padding: 12px 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace; /* Apply techy font to buttons */
+        }
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #888;
+            transform: translateY(-2px);
+        }
+        /* Slider Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #a0a0a0;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #a0a0a0;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+        /* Select/Dropdown Styling */
+        select {
+            padding: 10px;
+            background-color: #2c2c2c;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace; /* Apply techy font to select */
+        }
+        select:focus {
+            outline: none;
+            border-color: #888;
+        }
+
+        /* --- Loading Overlay Styles --- */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95); /* Darker overlay */
+            z-index: 100; /* Ensure it's on top */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; /* Start hidden */
+            visibility: hidden; /* Start hidden */
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            font-family: 'Share Tech Mono', monospace; /* Techy font for loading */
+            color: #4dff4d; /* Bright green text */
+            text-shadow: 0 0 10px rgba(77, 255, 77, 0.7);
+        }
+
+        #loading-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-animation {
+            /* Use viewport width for fluid scaling. Adjust the value as needed. */
+            font-size: 2vw; 
+            margin-bottom: 20px;
+            white-space: pre; /* Preserve whitespace for ASCII art */
+            animation: glitch 1.5s infinite alternate; /* Glitch effect */
+            padding: 0 10px; /* Reduced padding */
+            box-sizing: border-box; /* Include padding in width calculation */
+            text-align: center; /* Center the ASCII art lines */
+            line-height: 1.2; /* Adjust line height for tighter packing */
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 24px;
+            text-align: center;
+            transition: font-size 0.3s ease-in-out; /* Smooth transition for font size */
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 0 0 10px rgba(77, 255, 77, 0.7); transform: translate(0, 0); }
+            20% { text-shadow: 0 0 12px rgba(77, 255, 77, 0.8), 2px 2px 0 rgba(255,0,0,0.5); transform: translate(-2px, -2px); }
+            40% { text-shadow: 0 0 10px rgba(77, 255, 77, 0.7); transform: translate(0, 0); }
+            60% { text-shadow: 0 0 12px rgba(77, 255, 77, 0.8), -2px -2px 0 rgba(0,0,255,0.5); transform: translate(2px, 2px); }
+            80% { text-shadow: 0 0 10px rgba(77, 255, 77, 0.7); transform: translate(0, 0); }
+            100% { text-shadow: 0 0 12px rgba(77, 255, 77, 0.8), 2px -2px 0 rgba(255,255,0,0.5); transform: translate(-1px, 1px); }
+        }
+
+        /* --- Responsive Adjustments for Loading Screen --- */
+        
+        /* Cap the font size on larger screens to prevent it from getting too big */
+        @media (min-width: 800px) {
+            .loading-animation {
+                font-size: 1.5em; /* Cap the font size at a reasonable level */
+            }
+        }
+
+        @media (max-width: 600px) {
+            .loading-text {
+                font-size: 18px; /* Reduce font size for the text */
+            }
+        }
+
+        @media (max-width: 420px) {
+            .loading-text {
+                font-size: 16px; /* Further reduce font size */
+            }
+        }
+    </style>
+    <!-- Asynchronous font loading with font-display: swap -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
+
+    <!-- Google Analytics (async loading) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+</head>
+<body>
+    <main>
+        <h1 style="position: absolute; left: -9999px;">PCB Circuit Board Generator</h1>
+        <canvas id="circuit-canvas" aria-label="Interactive circuit board generator canvas"></canvas>
+
+        <!-- Loading Overlay -->
+        <section id="loading-overlay" role="status" aria-live="polite">
+            <div class="loading-animation">
+                <pre>
+ :::         ...       :::.   :::::::-.  ::::::.    :::.  .,-:::::/  
+ ;;;      .;;;;;;;.    ;;`;;   ;;,   `';,;;;`;;;;,  `;;;,;;-'```'   
+ [[[     ,[[     \[[, ,[[ '[[, `[[     [[[[[  [[[[[. '[[[[[   [[[[[[/
+ $$'     $$$,     $$$c$$$cc$$$c $$,    $$$$$  $$$ "Y$c$$"$$c.    "$$ 
+o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
+""""YUMMM  "YMMMMMP"  YMM   ""` MMMMP"`  MMM  MMM     YM   `'YMUP"YMM
+                </pre>
+            </div>
+            <p class="loading-text">Initializing Circuit Matrix...</p>
+        </section>
+
+        <!-- Menu Toggle Button -->
+        <button class="menu-toggle" id="menu-toggle" aria-controls="settings-panel" aria-expanded="false" aria-label="Toggle settings panel">
+            <div class="bar bar1"></div>
+            <div class="bar bar2"></div>
+            <div class="bar bar3"></div>
+        </button>
+
+        <!-- Settings Panel -->
+        <aside class="settings-panel" id="settings-panel">
+            <section class="control-group">
+                <h2>Circuit Breaker</h2>
+                <button id="regen-btn" class="btn" aria-label="Randomize Board">Randomize Board</button>
+            </section>
+            
+            <section class="control-group">
+                <label for="density-slider">Board Density</label>
+                <input type="range" id="density-slider" min="10" max="150" value="80" aria-valuemin="10" aria-valuemax="150" aria-valuenow="80" aria-label="Adjust board density">
+            </section>
+            
+            <section class="control-group">
+                <label for="ic-complexity-slider">IC Complexity</label>
+                <input type="range" id="ic-complexity-slider" min="10" max="80" value="30" aria-valuemin="10" aria-valuemax="80" aria-valuenow="30" aria-label="Adjust IC complexity">
+            </section>
+
+            <section class="control-group">
+                <label for="connectors-slider">Number of Connectors</label>
+                <input type="range" id="connectors-slider" min="0" max="15" value="7" aria-valuemin="0" aria-valuemax="15" aria-valuenow="7" aria-label="Adjust number of connectors">
+            </section>
+
+            <section class="control-group">
+                <button id="regenerate-board-btn" class="btn" aria-label="Regenerate Board">Regenerate Board</button>
+            </section>
+
+            <section class="control-group">
+                <label for="color-select">Primary Color</label>
+                <select id="color-select" aria-label="Select primary board color">
+                    <option value="#003800">Green</option>
+                    <option value="#00293C">Blue</option>
+                    <option value="#2a2a2a">Black</option>
+                    <option value="#4a0000">Red</option>
+                    <option value="#01211a">Teal</option>
+                    <option value="#3b003b">Purple</option>
+                    <option value="#5c4033">Brown</option>
+                    <option value="#6b6b6b">Grey</option>
+                </select>
+            </section>
+            
+            <section class="control-group">
+                <button id="export-btn" class="btn" aria-label="Export Wallpaper">Export Wallpaper</button>
+            </section>
+        </aside>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const canvas = document.getElementById('circuit-canvas');
+            let ctx = canvas.getContext('2d');
+            const exportBtn = document.getElementById('export-btn');
+            const regenBtn = document.getElementById('regen-btn');
+            const regenerateBoardBtn = document.getElementById('regenerate-board-btn');
+            const menuToggle = document.getElementById('menu-toggle');
+            const settingsPanel = document.getElementById('settings-panel');
+            const loadingOverlay = document.getElementById('loading-overlay'); 
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            
+            // --- UI Control Elements ---
+            const densitySlider = document.getElementById('density-slider');
+            const colorSelect = document.getElementById('color-select');
+            const icComplexitySlider = document.getElementById('ic-complexity-slider');
+            const connectorsSlider = document.getElementById('connectors-slider');
+
+            let width, height, cols, rows;
+            let components = [];
+            let grid = [];
+            let allPaths = [];
+            let allVias = [];
+            
+            // --- CONFIGURATION ---
+            const config = {
+                primaryColor: '#003800',
+                colors: {
+                    background: ['#003800', '#00293C', '#2a2a2a', '#4a0000', '#01211a', '#3b003b', '#5c4033', '#6b6b6b'],
+                    traceLayer0: ['#c7b678', '#d6c586', '#a1935f', '#b8a66a'],
+                    traceLayer1: ['#7d724c', '#8a7e55', '#696141', '#786d46'],
+                    pad: { fill: '#d4af37', stroke: '#a17f2a' },
+                    copperPour: 'rgba(184, 167, 106, 0.05)',
+                    component: ['#1a1a1a', '#2b2b2b', '#3c3c3c'],
+                    silkScreen: 'rgba(230, 230, 230, 0.7)',
+                    resistorBody: '#d1c5b4',
+                    smdCapacitorBody: '#9a795d',
+                    electrolyticCapBody: '#1d1d1d',
+                    diodeBody: '#1c1c1c',
+                    crystalBody: '#c0c0c0',
+                    ledBody: '#f0f0f0',
+                    ledColor: ['#ff4d4d', '#4dff4d', '#4d4dff', '#ffff4d'],
+                    inductorBody: ['#4a5568', '#2d3748'],
+                    connectorBody: ['#111111', '#222222']
+                },
+                gridSize: 5,
+                cluster: {
+                    maxAnchors: 10,
+                    supportComponents: 120,
+                    radius: 35
+                },
+                ic: {
+                    baseSize: 25
+                },
+                connectors: {
+                    count: 7
+                },
+                routing: {
+                    maxIterations: 10000,
+                    busLanes: 15
+                },
+                prob: {
+                    resistor: 0.30,
+                    smdCapacitor: 0.30,
+                    electrolyticCapacitor: 0.08, 
+                    transistor: 0.08, 
+                    diode: 0.08, 
+                    led: 0.05,
+                    inductor: 0.05,
+                    crystal: 0.04,
+                    smallSmd: 0.02
+                }
+            };
+
+            const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+            
+            // --- DRAWING HELPER (Refactored to accept context) ---
+            function drawRoundedRect(ctx, x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawPad(ctx, x, y, isSquare = false) {
+                const r = config.gridSize * 0.9;
+                const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+                grad.addColorStop(0, '#fffbe0');
+                grad.addColorStop(0.5, config.colors.pad.fill);
+                grad.addColorStop(1, config.colors.pad.stroke);
+                ctx.fillStyle = grad;
+
+                if (isSquare) {
+                    const size = r * 1.8;
+                    ctx.fillRect(x - size / 2, y - size / 2, size, size);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+
+            // --- DRAWING FUNCTIONS (Refactored to accept context) ---
+            function drawBoardTexture(ctx, color) {
+                const w = ctx.canvas.width;
+                const h = ctx.canvas.height;
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, w, h);
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.globalAlpha = 0.03;
+                for(let i = 0; i < w; i += 2) {
+                    ctx.fillStyle = (i % 4 === 0) ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+                    ctx.fillRect(i, 0, 1, h);
+                }
+                for(let i = 0; i < h; i += 2) {
+                    ctx.fillStyle = (i % 4 === 0) ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+                    ctx.fillRect(0, i, w, 1);
+                }
+                ctx.restore();
+            }
+
+            function drawCopperPour(ctx) {
+                const w = ctx.canvas.width;
+                const h = ctx.canvas.height;
+                ctx.fillStyle = config.colors.copperPour;
+                ctx.fillRect(0, 0, w, h);
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.globalAlpha = 0.02;
+                for(let i=0; i<5000; i++) {
+                    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
+                    ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+                }
+                ctx.restore();
+            }
+            
+            function drawComponentAndPads(ctx, comp) {
+                ctx.save();
+                ctx.translate(comp.x, comp.y);
+                ctx.rotate(comp.rotation);
+                
+                const w = comp.unrotatedWidth;
+                const h = comp.unrotatedHeight;
+                const cornerRadius = 2;
+
+                ctx.shadowColor = 'transparent';
+                if(comp.localPins) {
+                    comp.localPins.forEach((pin, index) => {
+                        const isIcPin1 = comp.type === 'ic' && index === 0;
+                        drawPad(ctx, pin.x, pin.y, isIcPin1);
+                    });
+                }
+
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'; ctx.shadowBlur = 18; ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 6;
+                
+                if (comp.type === 'resistor' || comp.type === 'smdCapacitor' || comp.type === 'diode' || comp.type === 'led' || comp.type === 'crystal' || comp.type === 'inductor' || comp.type === 'smallSmd') {
+                    const bodyColor = comp.type === 'resistor' ? config.colors.resistorBody :
+                                      comp.type === 'smdCapacitor' ? config.colors.smdCapacitorBody :
+                                      comp.type === 'diode' ? config.colors.diodeBody :
+                                      comp.type === 'led' ? config.colors.ledBody :
+                                      comp.type === 'inductor' ? comp.color : 
+                                      comp.type === 'smallSmd' ? config.colors.smdCapacitorBody : config.colors.crystalBody;
+                    ctx.fillStyle = bodyColor;
+                    drawRoundedRect(ctx, -w/2, -h/2, w, h, cornerRadius);
+
+                    if (w > config.gridSize * 2) {
+                        ctx.fillStyle = config.colors.pad.fill;
+                        drawRoundedRect(ctx, -w/2, -h/2, w * 0.2, h, cornerRadius);
+                        drawRoundedRect(ctx, w/2 - w * 0.2, -h/2, w * 0.2, h, cornerRadius);
+                    }
+
+                    if (comp.type === 'diode') {
+                        ctx.fillStyle = '#cccccc';
+                        drawRoundedRect(ctx, w/2 - w*0.3, -h/2, w*0.3, h, cornerRadius/2);
+                    }
+                    if (comp.type === 'led') {
+                        const lensR = Math.min(w,h) * 0.35;
+                        ctx.fillStyle = comp.ledColor; ctx.shadowColor = comp.ledColor; ctx.shadowBlur = 15;
+                        ctx.beginPath(); ctx.arc(0, 0, lensR, 0, Math.PI*2); ctx.fill();
+                        ctx.shadowColor = 'transparent';
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.beginPath(); ctx.arc(-lensR*0.3, -lensR*0.3, lensR*0.4, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                        ctx.beginPath(); ctx.moveTo(w/2 - 4, -h/2); ctx.lineTo(w/2, -h/2 + 4); ctx.lineTo(w/2, -h/2); ctx.closePath(); ctx.fill();
+                    }
+                    if (comp.type === 'resistor') {
+                        const bandWidth = w * 0.08; const bandOffset = w * 0.15;
+                        ctx.fillStyle = '#663300'; drawRoundedRect(ctx, -bandOffset, -h/2, bandWidth, h, cornerRadius/2);
+                        ctx.fillStyle = '#000099'; drawRoundedRect(ctx, 0, -h/2, bandWidth, h, cornerRadius/2);
+                        ctx.fillStyle = '#990000'; drawRoundedRect(ctx, bandOffset, -h/2, bandWidth, h, cornerRadius/2);
+                    }
+
+                } else if (comp.type === 'electrolyticCapacitor') {
+                    const r = w / 2; 
+                    ctx.fillStyle = config.colors.electrolyticCapBody;
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+                    const metalR = r * 0.9;
+                    const grad = ctx.createRadialGradient(0,0,1, 0, 0, metalR);
+                    grad.addColorStop(0, '#e0e0e0'); grad.addColorStop(0.7, '#b0b0b0'); grad.addColorStop(1, '#999999');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath(); ctx.arc(0, 0, metalR, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+                    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                    const stripeWidth = r * 0.3;
+                    drawRoundedRect(ctx, -r, -stripeWidth/2, r*2, stripeWidth, 1);
+                    ctx.beginPath(); ctx.moveTo(-metalR*0.7, 0); ctx.lineTo(metalR*0.7, 0); ctx.moveTo(0, -metalR*0.7); ctx.lineTo(0, metalR*0.7); ctx.stroke();
+                } else if (comp.type === 'transistor') {
+                    ctx.fillStyle = '#111'; 
+                    drawRoundedRect(ctx, -w/2, -h/2, w, h, cornerRadius);
+                    ctx.fillStyle = '#333';
+                    drawRoundedRect(ctx, -w/2 + 2, -h/2 + 2, w - 4, h - 4, cornerRadius);
+                } else if (comp.type === 'connector') {
+                    ctx.fillStyle = comp.color;
+                    drawRoundedRect(ctx, -w/2, -h/2, w, h, cornerRadius);
+                    const pinSpacing = config.gridSize * 2;
+                    const numPins = Math.floor(w / pinSpacing);
+                    ctx.fillStyle = '#0a0a0a';
+                    for (let i = 0; i < numPins; i++) {
+                        const pinX = -w/2 + (i * pinSpacing) + pinSpacing/2;
+                        ctx.beginPath(); ctx.arc(pinX, 0, config.gridSize * 0.4, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else { // IC
+                    ctx.fillStyle = comp.color; 
+                    drawRoundedRect(ctx, -w / 2, -h / 2, w, h, cornerRadius);
+                    ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.globalAlpha = 0.08;
+                    for(let i=0; i<500; i++){ ctx.fillStyle = Math.random() > 0.5 ? 'white' : 'black'; ctx.fillRect(Math.random()*w - w/2, Math.random()*h - h/2, 1, 1); }
+                    ctx.restore();
+                    ctx.beginPath(); ctx.arc(-w/2 + config.gridSize, 0, config.gridSize * 0.7, -Math.PI/2, Math.PI/2); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
+                    if (comp.label) {
+                        ctx.fillStyle = config.colors.silkScreen; ctx.globalAlpha = 0.6; ctx.font = `bold ${w * 0.12}px "Inter"`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const lines = comp.label.split('\n'); const lineHeight = w * 0.15;
+                        lines.forEach((line, i) => { ctx.fillText(line, 0, (i - (lines.length - 1) / 2) * lineHeight); }); ctx.globalAlpha = 1;
+                    }
+                }
+                ctx.restore();
+            }
+
+            function drawVia(ctx, via) {
+                const x = via.x * config.gridSize + config.gridSize/2, y = via.y * config.gridSize + config.gridSize/2;
+                const r = config.gridSize * 0.7;
+                const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+                grad.addColorStop(0, '#f0e0b0');
+                grad.addColorStop(0.5, '#b89d5a');
+                grad.addColorStop(1, '#615330');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(x, y, r * 0.3, 0, Math.PI * 2); ctx.fill();
+            }
+
+            function drawTrace(ctx, pathData) {
+                const { path, color, width, layer } = pathData; if (!path || path.length < 2) return;
+                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.beginPath(); const start = {x: path[0].x * config.gridSize + config.gridSize/2, y: path[0].y * config.gridSize + config.gridSize/2};
+                ctx.moveTo(start.x, start.y);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width * 0.8;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = layer === 0 ? 10 : 3;
+                ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+                ctx.globalAlpha = layer === 0 ? 1.0 : 0.6;
+                for (let i = 1; i < path.length; i++) { const point = {x: path[i].x * config.gridSize + config.gridSize/2, y: path[i].y * config.gridSize + config.gridSize/2}; ctx.lineTo(point.x, point.y); }
+                ctx.stroke();
+                if (layer === 0) {
+                    ctx.beginPath(); ctx.moveTo(start.x, start.y);
+                    ctx.strokeStyle = 'rgba(255, 255, 235, 0.15)'; ctx.lineWidth = width * 0.3; ctx.shadowColor = 'transparent';
+                    for (let i = 1; i < path.length; i++) { const point = {x: path[i].x * config.gridSize + config.gridSize/2, y: path[i].y * config.gridSize + config.gridSize/2}; ctx.lineTo(point.x, point.y); }
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1.0;
+            }
+
+            function drawSilkscreen(ctx) {
+                ctx.fillStyle = config.colors.silkScreen;
+                ctx.font = `${config.gridSize * 1.8}px "Inter"`;
+                components.forEach(comp => {
+                    if(!comp.silkscreenDesignator) return;
+                    ctx.save();
+                    ctx.translate(comp.x, comp.y);
+                    ctx.rotate(comp.rotation);
+                    
+                    const offset = (Math.max(comp.unrotatedWidth, comp.unrotatedHeight) / 2) + config.gridSize * 2.5;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(comp.silkscreenDesignator, 0, -offset);
+
+                    ctx.strokeStyle = config.colors.silkScreen;
+                    ctx.lineWidth = 1;
+                    const w = comp.unrotatedWidth;
+                    const h = comp.unrotatedHeight;
+
+                    if (comp.type === 'electrolyticCapacitor') {
+                        const r = w / 2;
+                        ctx.beginPath(); ctx.arc(0, 0, r + config.gridSize, 0, Math.PI * 2); ctx.stroke();
+                        ctx.font = `bold ${config.gridSize * 3}px "Inter"`; ctx.fillText("+", r + config.gridSize * 2, 0);
+                    } else if (comp.type === 'diode') {
+                        ctx.beginPath();
+                        ctx.moveTo(-w/2 + 5, -h/2 + 5);
+                        ctx.lineTo(-w/2 + 5, h/2 - 5);
+                        ctx.lineTo(-w/2 + 15, 0);
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                });
+            }
+
+            // --- Master Drawing Function ---
+            function drawFullBoard(targetCtx) {
+                drawBoardTexture(targetCtx, config.primaryColor);
+                drawCopperPour(targetCtx);
+                allPaths.filter(p => p.layer === 1).forEach(pathData => drawTrace(targetCtx, pathData));
+                allPaths.filter(p => p.layer === 0).forEach(pathData => drawTrace(targetCtx, pathData));
+                allVias.forEach(via => drawVia(targetCtx, via));
+                drawSilkscreen(targetCtx);
+                components.forEach(comp => drawComponentAndPads(targetCtx, comp));
+            }
+            
+            // --- Path simplification helper function ---
+            function simplifyPath(path) {
+                if (!path || path.length < 3) return path;
+                const newPath = [path[0]];
+                for (let i = 1; i < path.length - 1; i++) {
+                    const p_prev = path[i-1], p_curr = path[i], p_next = path[i+1];
+                    const dx1 = p_curr.x - p_prev.x, dy1 = p_curr.y - p_prev.y;
+                    const dx2 = p_next.x - p_curr.x, dy2 = p_next.y - p_curr.y;
+                    if (dx1 !== dx2 || dy1 !== dy2) newPath.push(p_curr);
+                }
+                newPath.push(path[path.length - 1]);
+                return newPath;
+            }
+
+            // --- A* pathfinding algorithm ---
+            function findPath(startNode, endNode, layerGrid) {
+                let openSet = [];
+                let closedSet = new Set();
+                let pathGrid = layerGrid.map(col => col.map(cell => ({...cell, f:0, g:0, h:0, parent:null, dir: {x:0, y:0} })));
+                pathGrid[startNode.x][startNode.y].obstacle = false;
+                pathGrid[endNode.x][endNode.y].obstacle = false;
+                let startGridNode = pathGrid[startNode.x][startNode.y];
+                let endGridNode = pathGrid[endNode.x][endNode.y];
+                openSet.push(startGridNode);
+                let iterations = 0;
+                while (openSet.length > 0 && iterations < config.routing.maxIterations) {
+                    iterations++;
+                    let lowestIndex = 0;
+                    for (let i = 0; i < openSet.length; i++) if (openSet[i].f < openSet[lowestIndex].f) lowestIndex = i;
+                    let current = openSet[lowestIndex];
+                    if (current.x === endGridNode.x && current.y === endGridNode.y) {
+                        let path = []; let temp = current;
+                        while (temp) { path.push({x: temp.x, y: temp.y}); temp = temp.parent; }
+                        return simplifyPath(path.reverse());
+                    }
+                    openSet.splice(lowestIndex, 1);
+                    closedSet.add(`${current.x},${current.y}`);
+                    let neighbors = getNeighbors(current, pathGrid);
+                    for (let neighbor of neighbors) {
+                        if (closedSet.has(`${neighbor.x},${neighbor.y}`) || neighbor.obstacle) continue;
+                        const moveDir = { x: neighbor.x - current.x, y: neighbor.y - current.y };
+                        const turnPenalty = (moveDir.x !== current.dir.x || moveDir.y !== current.dir.y) && current.parent ? 20 : 0;
+                        const diagonalPenalty = (moveDir.x !== 0 && moveDir.y !== 0) ? 5 : 0;
+                        let gScore = current.g + neighbor.cost + turnPenalty + diagonalPenalty;
+                        if (!openSet.includes(neighbor) || gScore < neighbor.g) {
+                            neighbor.g = gScore;
+                            neighbor.h = Math.abs(neighbor.x - endGridNode.x) + Math.abs(neighbor.y - endGridNode.y);
+                            neighbor.f = neighbor.g + neighbor.h;
+                            neighbor.parent = current;
+                            neighbor.dir = moveDir;
+                            if (!openSet.includes(neighbor)) openSet.push(neighbor);
+                        }
+                    }
+                }
+                return null;
+            }
+            
+            function getNeighbors(node, pathGrid) {
+                let neighbors = [];
+                const { x, y } = node;
+                const directions = [[0,1,1], [1,0,1], [0,-1,1], [-1,0,1], [1,1,1.4], [1,-1,1.4], [-1,1,1.4], [-1,-1,1.4]];
+                for(let [dx, dy, cost] of directions) {
+                    if(x + dx >= 0 && x + dx < cols && y + dy >= 0 && y + dy < rows) {
+                        let neighbor = pathGrid[x+dx][y+dy];
+                        neighbor.cost = cost;
+                        neighbors.push(neighbor);
+                    }
+                }
+                return neighbors;
+            }
+
+            function getRotatedAABB(comp, clearance) {
+                const unrotatedW_grid = comp.unrotatedWidth / config.gridSize;
+                const unrotatedH_grid = comp.unrotatedHeight / config.gridSize;
+                const currentRotation = comp.rotation;
+                const corners = [{ x: comp.gx, y: comp.gy }, { x: comp.gx + unrotatedW_grid, y: comp.gy }, { x: comp.gx, y: comp.gy + unrotatedH_grid }, { x: comp.gx + unrotatedW_grid, y: comp.gy + unrotatedH_grid }];
+                const centerX = comp.gx + unrotatedW_grid / 2;
+                const centerY = comp.gy + unrotatedH_grid / 2;
+                let rotatedCorners = [];
+                for (const corner of corners) {
+                    const translatedX = corner.x - centerX; const translatedY = corner.y - centerY;
+                    const rotatedX = translatedX * Math.cos(currentRotation) - translatedY * Math.sin(currentRotation);
+                    const rotatedY = translatedX * Math.sin(currentRotation) + translatedY * Math.cos(currentRotation);
+                    rotatedCorners.push({ x: rotatedX + centerX, y: rotatedY + centerY });
+                }
+                const effectiveMinX = Math.min(...rotatedCorners.map(p => p.x));
+                const effectiveMinY = Math.min(...rotatedCorners.map(p => p.y));
+                const effectiveMaxX = Math.max(...rotatedCorners.map(p => p.x));
+                const effectiveMaxY = Math.max(...rotatedCorners.map(p => p.y));
+                return { minX: Math.floor(effectiveMinX - clearance), minY: Math.floor(effectiveMinY - clearance), maxX: Math.ceil(effectiveMaxX + clearance), maxY: Math.ceil(effectiveMaxY + clearance) };
+            }
+
+            function canPlace(comp, targetGrid, customClearance = 5) {
+                const { minX, minY, maxX, maxY } = getRotatedAABB(comp, customClearance);
+                if (minX < 0 || minY < 0 || maxX > cols || maxY > rows) return false;
+                for (let x = minX; x < maxX; x++) {
+                    for (let y = minY; y < maxY; y++) {
+                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                            if (targetGrid[x] && targetGrid[x][y] && targetGrid[x][y].obstacle) return false;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            function markAsOccupied(comp, targetGrid, customClearance = 5) {
+                const { minX, minY, maxX, maxY } = getRotatedAABB(comp, customClearance);
+                for (let x = minX; x < maxX; x++) {
+                    for (let y = minY; y < maxY; y++) {
+                        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+                            if(targetGrid[x] && targetGrid[x][y]) targetGrid[x][y].obstacle = true;
+                        }
+                    }
+                }
+            }
+
+            // --- PLACEMENT & ROUTING ---
+            function placeAndRoute() {
+                components = []; allPaths = []; allVias = [];
+                let anchors = [];
+                let counters = { u: 0, r: 0, c: 0, q: 0, d: 0, y: 0, l: 0, j: 0, m: 0 };
+                let layer0Grid = grid.map(col => col.map(cell => ({...cell, obstacle: false})));
+                let layer1Grid = grid.map(col => col.map(cell => ({...cell, obstacle: false})));
+                
+                const minICsToPlace = 2;
+                for (let i = 0; i < minICsToPlace; i++) {
+                    let w_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
+                    let h_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
+                    let placedThisIC = false;
+                    const clearanceAttempts = [8, 6, 4, 2]; 
+                    for (const currentClearance of clearanceAttempts) {
+                        for (let attempt = 0; attempt < 500; attempt++) {
+                            let gx = Math.floor(Math.random() * (cols - w_grid));
+                            let gy = Math.floor(Math.random() * (rows - h_grid));
+                            const tempComp = createComponent('ic', gx, gy, w_grid, h_grid, null, null);
+                            tempComp.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2); 
+                            if (canPlace(tempComp, layer0Grid, currentClearance)) {
+                                const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                                const anchor = createComponent('ic', gx, gy, w_grid, h_grid, label, `U${++counters.u}`);
+                                anchor.rotation = tempComp.rotation;
+                                components.push(anchor); anchors.push(anchor);
+                                markAsOccupied(anchor, layer0Grid, currentClearance);
+                                placedThisIC = true;
+                                break;
+                            }
+                        }
+                        if (placedThisIC) break;
+                    }
+
+                    if (!placedThisIC) {
+                        console.warn(`Could not place essential IC ${i+1}. Forcing placement.`);
+                        let gx = Math.floor(Math.random() * (cols - w_grid));
+                        let gy = Math.floor(Math.random() * (rows - h_grid));
+                        gx = Math.max(0, Math.min(cols - w_grid, gx));
+                        gy = Math.max(0, Math.min(rows - h_grid, gy));
+                        const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                        const anchor = createComponent('ic', gx, gy, w_grid, h_grid, label, `U${++counters.u}`);
+                        anchor.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2);
+                        components.push(anchor); anchors.push(anchor);
+                        markAsOccupied(anchor, layer0Grid, 0);
+                    }
+                }
+
+                placeConnectors(layer0Grid, counters);
+
+                for (let i = components.filter(c => c.type === 'ic').length; i < config.cluster.maxAnchors; i++) {
+                    let w_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
+                    let h_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
+                    let placed = false;
+                    for (let attempt = 0; attempt < 100; attempt++) {
+                        let gx = Math.floor(Math.random() * (cols - w_grid));
+                        let gy = Math.floor(Math.random() * (rows - h_grid));
+                        const tempComp = createComponent('ic', gx, gy, w_grid, h_grid, null, null);
+                        tempComp.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2);
+                        if (canPlace(tempComp, layer0Grid, 6)) {
+                            const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                            const anchor = createComponent('ic', gx, gy, w_grid, h_grid, label, `U${++counters.u}`);
+                            anchor.rotation = tempComp.rotation;
+                            components.push(anchor); anchors.push(anchor);
+                            markAsOccupied(anchor, layer0Grid, 6);
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) console.warn("Could not place an additional IC.");
+                }
+
+                anchors.forEach(anchor => {
+                    const numSupportComponents = Math.floor(config.cluster.supportComponents / anchors.length);
+                    const anchorCenterGridX = anchor.gx + anchor.unrotatedWidth / config.gridSize / 2;
+                    const anchorCenterGridY = anchor.gy + anchor.unrotatedHeight / config.gridSize / 2;
+                    const maxRows = Math.ceil(Math.sqrt(numSupportComponents));
+                    const maxCols = Math.ceil(numSupportComponents / maxRows);
+                    const componentSpacing = 8;
+                    for (let i = 0; i < numSupportComponents; i++) {
+                        let type, w_grid, h_grid, label, designator;
+                        const typeRoll = Math.random();
+                        let cumulativeProb = 0;
+                        if (typeRoll < (cumulativeProb += config.prob.resistor)) { type = 'resistor'; w_grid = 4; h_grid = 2; label = ['102', '473', '220', '0R0'][Math.floor(Math.random()*4)]; designator = `R${++counters.r}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.smdCapacitor)) { type = 'smdCapacitor'; w_grid = 2; h_grid = 2; designator = `C${++counters.c}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.electrolyticCapacitor)) { type = 'electrolyticCapacitor'; w_grid = 5; h_grid = 5; designator = `C${++counters.c}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.transistor)) { type = 'transistor'; w_grid = 3; h_grid = 3; designator = `Q${++counters.q}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.diode)) { type = 'diode'; w_grid = 3; h_grid = 2; designator = `D${++counters.d}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.led)) { type = 'led'; w_grid = 3; h_grid = 3; designator = `D${++counters.d}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.inductor)) { type = 'inductor'; w_grid = 4; h_grid = 4; designator = `L${++counters.l}`; }
+                        else if (typeRoll < (cumulativeProb += config.prob.smallSmd)) { type = 'smallSmd'; w_grid = 1; h_grid = 1; designator = `M${++counters.m}`; }
+                        else { type = 'crystal'; w_grid = 6; h_grid = 3; designator = `Y${++counters.y}`; }
+                        let placedComp = false;
+                        for (let attempt = 0; attempt < 100; attempt++) {
+                            const row = Math.floor(i / maxCols); const col = i % maxCols;
+                            const offsetX = (col - maxCols / 2 + 0.5) * componentSpacing;
+                            const offsetY = (row - maxRows / 2 + 0.5) * componentSpacing;
+                            let gx = Math.floor(anchorCenterGridX + offsetX) + Math.floor(Math.random() * 4) - 2;
+                            let gy = Math.floor(anchorCenterGridY + offsetY) + Math.floor(Math.random() * 4) - 2;
+                            gx = Math.max(0, Math.min(cols - w_grid, gx)); gy = Math.max(0, Math.min(rows - h_grid, gy));
+                            const tempComp = createComponent(type, gx, gy, w_grid, h_grid, label, designator);
+                            const isSmall2Pin = type === 'resistor' || type === 'smdCapacitor' || type === 'diode' || type === 'inductor' || type === 'led' || type === 'smallSmd';
+                            tempComp.rotation = isSmall2Pin ? Math.floor(Math.random() * 2) * (Math.PI / 2) : Math.floor(Math.random() * 4) * (Math.PI / 2);
+                            if (canPlace(tempComp, layer0Grid, 4)) {
+                                components.push(tempComp); markAsOccupied(tempComp, layer0Grid, 4);
+                                placedComp = true; break;
+                            }
+                        }
+                        if (!placedComp) {
+                            console.warn(`Could not place support component of type ${type}.`);
+                            for (let attempt = 0; attempt < 50; attempt++) {
+                                let gx = Math.floor(Math.random() * (cols - w_grid)); let gy = Math.floor(Math.random() * (rows - h_grid));
+                                const tempComp = createComponent(type, gx, gy, w_grid, h_grid, label, designator);
+                                const isSmall2Pin = type === 'resistor' || type === 'smdCapacitor' || type === 'diode' || type === 'inductor' || type === 'led' || type === 'smallSmd';
+                                tempComp.rotation = isSmall2Pin ? Math.floor(Math.random() * 2) * (Math.PI / 2) : Math.floor(Math.random() * 4) * (Math.PI / 2);
+                                if (canPlace(tempComp, layer0Grid, 4)) { components.push(tempComp); markAsOccupied(tempComp, layer0Grid, 4); break; }
+                            }
+                        }
+                    }
+                });
+
+                const fillerComponentCount = config.cluster.supportComponents * 2;
+                for (let i = 0; i < fillerComponentCount; i++) {
+                    let type, w_grid, h_grid, label, designator;
+                    const typeRoll = Math.random();
+                    if (typeRoll < 0.3) { type = 'resistor'; w_grid = 4; h_grid = 2; label = ['102', '473', '220', '0R0'][Math.floor(Math.random()*4)]; designator = `R${++counters.r}`; }
+                    else if (typeRoll < 0.6) { type = 'smdCapacitor'; w_grid = 2; h_grid = 2; designator = `C${++counters.c}`; }
+                    else if (typeRoll < 0.8) { type = 'diode'; w_grid = 3; h_grid = 2; designator = `D${++counters.d}`; }
+                    else if (typeRoll < (0.8 + config.prob.smallSmd * 2)) { type = 'smallSmd'; w_grid = 1; h_grid = 1; designator = `M${++counters.m}`; }
+                    else { type = 'transistor'; w_grid = 3; h_grid = 3; designator = `Q${++counters.q}`; }
+                    for (let attempt = 0; attempt < 50; attempt++) {
+                        let gx = Math.floor(Math.random() * (cols - w_grid)); let gy = Math.floor(Math.random() * (rows - h_grid));
+                        const tempComp = createComponent(type, gx, gy, w_grid, h_grid, label, designator);
+                        const isSmall2Pin = type === 'resistor' || type === 'smdCapacitor' || type === 'diode' || type === 'inductor' || type === 'led' || type === 'smallSmd';
+                        tempComp.rotation = isSmall2Pin ? Math.floor(Math.random() * 2) * (Math.PI / 2) : Math.floor(Math.random() * 4) * (Math.PI / 2);
+                        if (canPlace(tempComp, layer0Grid, 3)) { components.push(tempComp); markAsOccupied(tempComp, layer0Grid, 3); break; }
+                    }
+                }
+
+                components.flatMap(c => c.pins).forEach(pin => {
+                    if (layer0Grid[pin.x]?.[pin.y]) layer0Grid[pin.x][pin.y].obstacle = true;
+                    if (layer1Grid[pin.x]?.[pin.y]) layer1Grid[pin.x][pin.y].obstacle = true;
+                });
+
+                if (anchors.length >= 2) {
+                    for (let i = 0; i < anchors.length -1; i++) routeBus(anchors[i], anchors[i+1], layer0Grid, layer1Grid);
+                }
+                
+                let unroutedComponents = [...components];
+                while(unroutedComponents.length > 1) {
+                    let comp = unroutedComponents.pop();
+                    let nearest = null, min_dist = Infinity;
+                    unroutedComponents.forEach(other_comp => {
+                        const dist = Math.hypot(comp.x - other_comp.x, comp.y - other_comp.y);
+                        if (dist < min_dist) { min_dist = dist; nearest = other_comp; }
+                    });
+                    if (nearest) {
+                        const numConnections = Math.floor(Math.random() * 4) + 1;
+                        for (let i = 0; i < numConnections; i++) {
+                            const startPin = comp.pins[Math.floor(Math.random() * comp.pins.length)];
+                            const endPin = nearest.pins[Math.floor(Math.random() * nearest.pins.length)];
+                            if(startPin && endPin) routeSingleTrace(startPin, endPin, layer0Grid, layer1Grid);
+                        }
+                    }
+                }
+            }
+
+            function placeConnectors(layer0Grid, counters) {
+                const numConnectors = config.connectors.count;
+                for (let i = 0; i < numConnectors; i++) {
+                    const edge = Math.floor(Math.random() * 4);
+                    const w_grid = Math.floor(Math.random() * 20) + 10;
+                    const h_grid = 4;
+                    let gx, gy;
+                    switch(edge) {
+                        case 0: gx = Math.floor(Math.random() * (cols - w_grid)); gy = 2; break;
+                        case 1: gx = cols - h_grid - 2; gy = Math.floor(Math.random() * (rows - w_grid)); break;
+                        case 2: gx = Math.floor(Math.random() * (cols - w_grid)); gy = rows - h_grid - 2; break;
+                        case 3: gx = 2; gy = Math.floor(Math.random() * (rows - w_grid)); break;
+                    }
+                    let placed = false;
+                    for (let attempt = 0; attempt < 100; attempt++) {
+                        const tempConnector = createComponent('connector', gx, gy, w_grid, h_grid, null, null);
+                        if (edge === 1 || edge === 3) tempConnector.rotation = Math.PI / 2;
+                        if (canPlace(tempConnector, layer0Grid, 5)) {
+                            const connector = createComponent('connector', gx, gy, w_grid, h_grid, null, `J${++counters.j}`);
+                            connector.rotation = tempConnector.rotation;
+                            components.push(connector);
+                            markAsOccupied(connector, layer0Grid, 5);
+                            placed = true;
+                            break;
+                        }
+                        gx = Math.floor(Math.random() * (cols - w_grid));
+                        gy = Math.floor(Math.random() * (rows - h_grid));
+                    }
+                    if (!placed) console.warn("Could not place a connector.");
+                }
+            }
+
+            function routeSingleTrace(startPin, endPin, layer0Grid, layer1Grid) {
+                let path, pathLayer;
+                if (Math.random() > 0.5) {
+                    path = findPath(startPin, endPin, layer0Grid);
+                    if (path) { pathLayer = 0; } else { path = findPath(startPin, endPin, layer1Grid); if (path) pathLayer = 1; }
+                } else {
+                    path = findPath(startPin, endPin, layer1Grid);
+                    if (path) { pathLayer = 1; } else { path = findPath(startPin, endPin, layer0Grid); if (path) pathLayer = 0; }
+                }
+                if (path) {
+                    const targetGrid = pathLayer === 0 ? layer0Grid : layer1Grid;
+                    allPaths.push({ path, color: pathLayer === 0 ? pick(config.colors.traceLayer0) : pick(config.colors.traceLayer1), width: config.gridSize * 0.4, layer: pathLayer });
+                    if (pathLayer === 1 || Math.random() < 0.1) {
+                        allVias.push(path[0]);
+                        if (path.length > 1) allVias.push(path[path.length - 1]);
+                    }
+                    path.forEach(p => { if(targetGrid[p.x]?.[p.y]) targetGrid[p.x][p.y].obstacle = true; });
+                }
+            }
+
+            function routeBus(compA, compB, layer0Grid, layer1Grid) {
+                const traceColor = pick(config.colors.traceLayer1);
+                for (let i = 0; i < config.routing.busLanes; i++) {
+                    const startPin = compA.pins[i % compA.pins.length];
+                    const endPin = compB.pins[i % compB.pins.length];
+                    if (!startPin || !endPin || startPin.owner === endPin.owner) continue;
+                    let path = findPath(startPin, endPin, layer1Grid);
+                    if (path) {
+                        allPaths.push({ path, color: traceColor, width: config.gridSize * 0.35, layer: 1 });
+                        allVias.push(path[0]); allVias.push(path[path.length - 1]);
+                        path.forEach(p => { if(layer1Grid[p.x]?.[p.y]) layer1Grid[p.x][p.y].obstacle = true; });
+                    }
+                }
+            }
+            
+            function createComponent(type, gx, gy, w_grid, h_grid, label = null, silkscreenDesignator = null) {
+                const comp = { 
+                    type, label, silkscreenDesignator, gx, gy,
+                    x: (gx + w_grid / 2) * config.gridSize, y: (gy + h_grid / 2) * config.gridSize,
+                    unrotatedWidth: w_grid * config.gridSize, unrotatedHeight: h_grid * config.gridSize,
+                    rotation: 0,
+                    color: type === 'inductor' ? pick(config.colors.inductorBody) : (type === 'connector' ? pick(config.colors.connectorBody) : pick(config.colors.component)),
+                    ledColor: type === 'led' ? pick(config.colors.ledColor) : null
+                };
+                comp.pins = getGlobalPins(comp, w_grid, h_grid);
+                comp.localPins = getLocalPins(comp, w_grid, h_grid);
+                return comp;
+            }
+            
+            function getGlobalPins(comp, w_grid, h_grid) {
+                const pins = [];
+                const owner = comp.silkscreenDesignator;
+                const gx = comp.gx, gy = comp.gy;
+                if (comp.type === 'ic') {
+                    for(let i = 1; i < w_grid - 1; i += 2) { pins.push({x: gx + i, y: gy - 1, owner}); pins.push({x: gx + i, y: gy + h_grid, owner}); }
+                    for(let i = 1; i < h_grid - 1; i += 2) { pins.push({x: gx - 1, y: gy + i, owner}); pins.push({x: gx + w_grid, y: gy + i, owner}); }
+                } else if (comp.type === 'connector') {
+                     for(let i = 0; i < w_grid; i += 2) pins.push({x: gx + i, y: gy + Math.floor(h_grid/2), owner});
+                } else if (comp.type === 'electrolyticCapacitor') {
+                    pins.push({x: gx + Math.floor(w_grid/2) -1, y: gy + Math.floor(h_grid/2), owner});
+                    pins.push({x: gx + Math.floor(w_grid/2) +1, y: gy + Math.floor(h_grid/2), owner});
+                } else if (comp.type === 'transistor') {
+                     pins.push({x: gx - 1, y: gy, owner});
+                     pins.push({x: gx - 1, y: gy + h_grid - 1, owner});
+                     pins.push({x: gx + w_grid, y: gy + Math.floor(h_grid/2), owner});
+                } else if (comp.type === 'smallSmd') {
+                    pins.push({x: gx + Math.floor(w_grid/2), y: gy - 1, owner});
+                    pins.push({x: gx + Math.floor(w_grid/2), y: gy + h_grid, owner});
+                }
+                else {
+                    pins.push({x: gx - 1, y: gy + Math.floor(h_grid/2), owner});
+                    pins.push({x: gx + w_grid, y: gy + Math.floor(h_grid/2), owner});
+                }
+                return pins.filter(p => p.x >= 0 && p.x < cols && p.y >= 0 && p.y < rows);
+            }
+
+            function getLocalPins(comp, w_grid, h_grid) {
+                const pins = [];
+                const w = w_grid * config.gridSize, h = h_grid * config.gridSize;
+                if (comp.type === 'ic') {
+                    for(let i = config.gridSize; i < w - config.gridSize; i += 2*config.gridSize) { pins.push({x: -w/2 + i, y: -h/2}); pins.push({x: -w/2 + i, y: h/2}); }
+                    for(let i = config.gridSize; i < h - config.gridSize; i += 2*config.gridSize) { pins.push({x: -w/2, y: -h/2 + i}); pins.push({x: w/2, y: -h/2 + i}); }
+                } else if (comp.type === 'connector') {
+                    for(let i = 0; i < w; i += 2*config.gridSize) pins.push({x: -w/2 + i + config.gridSize/2, y: 0});
+                } else if (comp.type === 'electrolyticCapacitor') {
+                    pins.push({x: -config.gridSize, y: 0}); pins.push({x: config.gridSize, y: 0});
+                } else if (comp.type === 'transistor') {
+                    const pinOffsetY = h * 0.5, pinOffsetX = w * 0.35;
+                    pins.push({x: -pinOffsetX, y: pinOffsetY}); pins.push({x: pinOffsetX, y: pinOffsetY}); pins.push({x: 0, y: -pinOffsetY});
+                } else if (comp.type === 'smallSmd') {
+                    pins.push({x: 0, y: -h/2}); pins.push({x: 0, y: h/2});
+                }
+                else {
+                    pins.push({x: -w/2, y: 0}); pins.push({x: w/2, y: 0});
+                }
+                return pins;
+            }
+            
+            function showLoading() {
+                loadingOverlay.classList.add('visible');
+                const messages = ["Initializing...", "Calibrating...", "Routing...", "Populating...", "Optimizing...", "Compiling...", "Energizing...", "Almost Ready..."];
+                let messageIndex = 0;
+                loadingText.textContent = messages[messageIndex];
+                loadingOverlay.messageInterval = setInterval(() => {
+                    messageIndex = (messageIndex + 1) % messages.length;
+                    loadingText.textContent = messages[messageIndex];
+                }, 1500);
+            }
+
+            function hideLoading() {
+                loadingOverlay.classList.remove('visible');
+                clearInterval(loadingOverlay.messageInterval);
+            }
+
+            function drawEmptyBoard() {
+                width = window.innerWidth; height = window.innerHeight;
+                canvas.width = width; canvas.height = height;
+                cols = Math.floor(width / config.gridSize); rows = Math.floor(height / config.gridSize);
+                grid = Array(cols).fill(null).map((_, x) => Array(rows).fill(null).map((_, y) => ({ x: x, y: y, obstacle: false })));
+                drawBoardTexture(ctx, config.primaryColor);
+                drawCopperPour(ctx);
+            }
+
+            function generateActual() {
+                try {
+                    config.cluster.supportComponents = parseInt(densitySlider.value);
+                    config.primaryColor = colorSelect.value;
+                    config.ic.baseSize = parseInt(icComplexitySlider.value);
+                    config.connectors.count = parseInt(connectorsSlider.value);
+                    drawEmptyBoard(); 
+                    placeAndRoute();
+                    drawFullBoard(ctx); // Use the master drawing function
+                } catch (e) {
+                    console.error("Failed to generate PCB:", e);
+                    ctx.fillStyle = '#ff0000'; ctx.fillRect(0,0,width,height);
+                    ctx.fillStyle = 'white'; ctx.font = '24px Share Tech Mono'; ctx.textAlign = 'center';
+                    ctx.fillText('Generation failed. Please try again.', width/2, height/2);
+                } finally {
+                    hideLoading();
+                    settingsPanel.classList.remove('open');
+                }
+            }
+            
+            function redrawWithNewColor() {
+                try {
+                    config.primaryColor = colorSelect.value;
+                    drawFullBoard(ctx); // Use the master drawing function
+                } catch (e) {
+                    console.error("Failed to redraw PCB with new color:", e);
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            menuToggle.addEventListener('click', () => {
+                settingsPanel.classList.toggle('open');
+            });
+
+            document.addEventListener('click', (event) => {
+                const isClickInsidePanel = settingsPanel.contains(event.target);
+                const isClickOnToggle = menuToggle.contains(event.target);
+                if (!isClickInsidePanel && !isClickOnToggle && settingsPanel.classList.contains('open')) {
+                    settingsPanel.classList.remove('open');
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                showLoading();
+                drawEmptyBoard(); 
+                setTimeout(generateActual, 100);
+            });
+            
+            // "Randomize Board" button
+            regenBtn.addEventListener('click', () => {
+                densitySlider.value = Math.floor(Math.random() * (parseInt(densitySlider.max) - parseInt(densitySlider.min) + 1)) + parseInt(densitySlider.min);
+                icComplexitySlider.value = Math.floor(Math.random() * (parseInt(icComplexitySlider.max) - parseInt(icComplexitySlider.min) + 1)) + parseInt(icComplexitySlider.min);
+                connectorsSlider.value = Math.floor(Math.random() * (parseInt(connectorsSlider.max) - parseInt(connectorsSlider.min) + 1)) + parseInt(connectorsSlider.min);
+            });
+            
+            // New "Regenerate Board" button
+            regenerateBoardBtn.addEventListener('click', () => {
+                showLoading();
+                drawEmptyBoard();
+                setTimeout(generateActual, 100);
+            });
+            
+            // Sliders no longer trigger regeneration on their own
+            densitySlider.addEventListener('input', () => {});
+            icComplexitySlider.addEventListener('input', () => {});
+            connectorsSlider.addEventListener('input', () => {});
+
+            colorSelect.addEventListener('change', redrawWithNewColor);
+
+            exportBtn.addEventListener('click', () => {
+                const exportWidth = 1920;
+                const exportHeight = 1080;
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = exportWidth;
+                exportCanvas.height = exportHeight;
+                const exportCtx = exportCanvas.getContext('2d');
+
+                // 1. Draw the seamless, full-size background pattern on the export canvas.
+                // This ensures the "letterbox" or "pillarbox" area has the same texture.
+                drawBoardTexture(exportCtx, config.primaryColor);
+                drawCopperPour(exportCtx);
+
+                // 2. Calculate the scale factor to fit the source canvas into the export dimensions
+                // while maintaining the aspect ratio.
+                const scaleFactor = Math.min(exportWidth / canvas.width, exportHeight / canvas.height);
+
+                // 3. Calculate the new dimensions of the scaled image.
+                const scaledWidth = canvas.width * scaleFactor;
+                const scaledHeight = canvas.height * scaleFactor;
+
+                // 4. Calculate the top-left position (dx, dy) to center the scaled image.
+                const dx = (exportWidth - scaledWidth) / 2;
+                const dy = (exportHeight - scaledHeight) / 2;
+
+                // 5. Draw the existing, fully rendered main canvas onto the export canvas.
+                // It will be drawn on top of the background, scaled and centered.
+                exportCtx.drawImage(canvas, dx, dy, scaledWidth, scaledHeight);
+
+                // 6. Trigger the download.
+                const link = document.createElement('a');
+                link.href = exportCanvas.toDataURL('image/png', 1.0);
+                link.download = `circuit-wallpaper-${Date.now()}.png`;
+                link.click();
+            });
+
+            // Initial load logic
+            showLoading();
+            drawEmptyBoard();
+            setTimeout(generateActual, 100);
+        });
+    </script>
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "[https://schema.org](https://schema.org)",
+      "@type": "WebPage",
+      "name": "PCB Circuit (Pretend) Board Generator",
+      "description": "Generate hyperrealistic PCB circuit board designs with customizable density, complexity, and colors. Explore intricate virtual electronics.",
+      "url": "[https://pirillo.com/arcade/circuit-breaker.html](https://pirillo.com/arcade/circuit-breaker.html)",
+      "image": "[https://pirillo.com/arcade/images/circuit-breaker.png](https://pirillo.com/arcade/images/circuit-breaker.png)",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "[https://pirillo.com](https://pirillo.com)",
+        "sameAs": ["[https://twitter.com/ChrisPirillo](https://twitter.com/ChrisPirillo)"]
+      },\n      "publisher": {
+        "@type": "Organization",
+        "name": "Pirillo.com",
+        "url": "[https://pirillo.com](https://pirillo.com)",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "[https://pirillo.com/favicon.ico](https://pirillo.com/favicon.ico)"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "[https://pirillo.com/arcade/circuit-breaker.html](https://pirillo.com/arcade/circuit-breaker.html)"
+      }
+    }
+    </script>
+</body>
+</html>
