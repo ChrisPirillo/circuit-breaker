@@ -303,14 +303,14 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
         </section>
 
         <!-- Menu Toggle Button -->
-        <button class="menu-toggle" id="menu-toggle" aria-controls="settings-panel" aria-expanded="false" aria-label="Toggle settings panel">
+        <button class="menu-toggle" id="menu-toggle" aria-controls="settings-panel" aria-expanded="true" aria-label="Toggle settings panel">
             <div class="bar bar1"></div>
             <div class="bar bar2"></div>
             <div class="bar bar3"></div>
         </button>
 
         <!-- Settings Panel -->
-        <aside class="settings-panel" id="settings-panel">
+        <aside class="settings-panel open" id="settings-panel">
             <section class="control-group">
                 <h2>Circuit Breaker</h2>
                 <button id="regen-btn" class="btn" aria-label="Randomize Board">Randomize Board</button>
@@ -801,6 +801,19 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
                 }
             }
 
+            // --- Randomize Settings Function ---
+            function randomizeSettings() {
+                // Randomize sliders
+                densitySlider.value = Math.floor(Math.random() * (parseInt(densitySlider.max) - parseInt(densitySlider.min) + 1)) + parseInt(densitySlider.min);
+                icComplexitySlider.value = Math.floor(Math.random() * (parseInt(icComplexitySlider.max) - parseInt(icComplexitySlider.min) + 1)) + parseInt(icComplexitySlider.min);
+                connectorsSlider.value = Math.floor(Math.random() * (parseInt(connectorsSlider.max) - parseInt(connectorsSlider.min) + 1)) + parseInt(connectorsSlider.min);
+
+                // Randomize color
+                const options = colorSelect.options;
+                const randomIndex = Math.floor(Math.random() * options.length);
+                colorSelect.selectedIndex = randomIndex;
+            }
+
             // --- PLACEMENT & ROUTING ---
             function placeAndRoute() {
                 components = []; allPaths = []; allVias = [];
@@ -811,40 +824,84 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
                 
                 const minICsToPlace = 2;
                 for (let i = 0; i < minICsToPlace; i++) {
-                    let w_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
-                    let h_grid = Math.floor(Math.random() * 20) + config.ic.baseSize;
-                    let placedThisIC = false;
-                    const clearanceAttempts = [8, 6, 4, 2]; 
-                    for (const currentClearance of clearanceAttempts) {
-                        for (let attempt = 0; attempt < 500; attempt++) {
-                            let gx = Math.floor(Math.random() * (cols - w_grid));
-                            let gy = Math.floor(Math.random() * (rows - h_grid));
-                            const tempComp = createComponent('ic', gx, gy, w_grid, h_grid, null, null);
-                            tempComp.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2); 
-                            if (canPlace(tempComp, layer0Grid, currentClearance)) {
-                                const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-                                const anchor = createComponent('ic', gx, gy, w_grid, h_grid, label, `U${++counters.u}`);
-                                anchor.rotation = tempComp.rotation;
-                                components.push(anchor); anchors.push(anchor);
-                                markAsOccupied(anchor, layer0Grid, currentClearance);
-                                placedThisIC = true;
-                                break;
-                            }
-                        }
-                        if (placedThisIC) break;
-                    }
+                    // Adapt initial size to be reasonable for the screen dimensions
+                    const maxInitialWidth = Math.max(Math.floor(cols * 0.4), config.ic.baseSize);
+                    const maxInitialHeight = Math.max(Math.floor(rows * 0.4), config.ic.baseSize);
 
-                    if (!placedThisIC) {
-                        console.warn(`Could not place essential IC ${i+1}. Forcing placement.`);
-                        let gx = Math.floor(Math.random() * (cols - w_grid));
-                        let gy = Math.floor(Math.random() * (rows - h_grid));
-                        gx = Math.max(0, Math.min(cols - w_grid, gx));
-                        gy = Math.max(0, Math.min(rows - h_grid, gy));
-                        const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-                        const anchor = createComponent('ic', gx, gy, w_grid, h_grid, label, `U${++counters.u}`);
-                        anchor.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2);
-                        components.push(anchor); anchors.push(anchor);
-                        markAsOccupied(anchor, layer0Grid, 0);
+                    let w_grid_base = Math.floor(Math.random() * 15) + config.ic.baseSize;
+                    let h_grid_base = Math.floor(Math.random() * 15) + config.ic.baseSize;
+                    
+                    let current_w = Math.min(w_grid_base, maxInitialWidth);
+                    let current_h = Math.min(h_grid_base, maxInitialHeight);
+                    
+                    let placedThisIC = false;
+
+                    // This loop will continue until the IC is placed, shrinking it if necessary.
+                    while(!placedThisIC) {
+                        // Ensure IC is not larger than the board
+                        if (current_w >= cols) current_w = cols - 2;
+                        if (current_h >= rows) current_h = rows - 2;
+                        if (current_w < 5 || current_h < 5) {
+                             console.error(`Catastrophic failure: IC ${i+1} shrunk too small. Board is too crowded or small.`);
+                             // As a last resort, place a tiny component to avoid breaking the render loop
+                             const anchor = createComponent('ic', 0, 0, 5, 5, "FAIL", `U${++counters.u}`);
+                             components.push(anchor); anchors.push(anchor);
+                             markAsOccupied(anchor, layer0Grid, 0);
+                             placedThisIC = true;
+                             continue; // Exit the while loop
+                        }
+
+                        // Stage 1: Random Placement Attempts
+                        const clearanceAttempts = [8, 6, 4, 2, 1]; 
+                        for (const currentClearance of clearanceAttempts) {
+                            for (let attempt = 0; attempt < 100; attempt++) { // More attempts for random placement
+                                let gx = Math.floor(Math.random() * (cols - current_w));
+                                let gy = Math.floor(Math.random() * (rows - current_h));
+                                if (gx < 0 || gy < 0) continue; 
+                                const tempComp = createComponent('ic', gx, gy, current_w, current_h, null, null);
+                                tempComp.rotation = Math.floor(Math.random() * 4) * (Math.PI / 2); 
+                                if (canPlace(tempComp, layer0Grid, currentClearance)) {
+                                    const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                                    const anchor = createComponent('ic', gx, gy, current_w, current_h, label, `U${++counters.u}`);
+                                    anchor.rotation = tempComp.rotation;
+                                    components.push(anchor); anchors.push(anchor);
+                                    markAsOccupied(anchor, layer0Grid, currentClearance);
+                                    placedThisIC = true;
+                                    break;
+                                }
+                            }
+                            if (placedThisIC) break;
+                        }
+                        if (placedThisIC) continue; // Exit while loop if placed
+
+                        // Stage 2: Exhaustive Search if random fails
+                        console.warn(`Could not place IC ${i+1} randomly. Starting exhaustive search with size ${current_w}x${current_h}.`);
+                        const rotations = [0, Math.PI/2, Math.PI, 3*Math.PI/2];
+                        for (let rot of rotations) {
+                            for (let gx = 0; gx <= cols - current_w; gx++) {
+                                for (let gy = 0; gy <= rows - current_h; gy++) {
+                                    const tempComp = createComponent('ic', gx, gy, current_w, current_h, null, null);
+                                    tempComp.rotation = rot;
+                                    if (canPlace(tempComp, layer0Grid, 1)) {
+                                        const label = `ICX-4600\n${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                                        const anchor = createComponent('ic', gx, gy, current_w, current_h, label, `U${++counters.u}`);
+                                        anchor.rotation = tempComp.rotation;
+                                        components.push(anchor); anchors.push(anchor);
+                                        markAsOccupied(anchor, layer0Grid, 1);
+                                        placedThisIC = true;
+                                        break; 
+                                    }
+                                }
+                                if (placedThisIC) break;
+                            }
+                            if (placedThisIC) break;
+                        }
+                        if(placedThisIC) continue; // Exit while loop if placed
+
+                        // Stage 3: If still not placed, shrink and repeat the whole process
+                        console.warn(`Exhaustive search failed for IC ${i+1}. Shrinking and retrying.`);
+                        current_w = Math.floor(current_w * 0.9);
+                        current_h = Math.floor(current_h * 0.9);
                     }
                 }
 
@@ -1138,7 +1195,6 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
                     ctx.fillText('Generation failed. Please try again.', width/2, height/2);
                 } finally {
                     hideLoading();
-                    settingsPanel.classList.remove('open');
                 }
             }
             
@@ -1154,6 +1210,7 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
             // --- EVENT LISTENERS ---
             menuToggle.addEventListener('click', () => {
                 settingsPanel.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', settingsPanel.classList.contains('open'));
             });
 
             document.addEventListener('click', (event) => {
@@ -1161,27 +1218,33 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
                 const isClickOnToggle = menuToggle.contains(event.target);
                 if (!isClickInsidePanel && !isClickOnToggle && settingsPanel.classList.contains('open')) {
                     settingsPanel.classList.remove('open');
+                    menuToggle.setAttribute('aria-expanded', 'false');
                 }
             });
 
             window.addEventListener('resize', () => {
                 showLoading();
-                drawEmptyBoard(); 
-                setTimeout(generateActual, 100);
+                randomizeSettings();
+                setTimeout(() => {
+                    generateActual();
+                }, 100);
             });
             
             // "Randomize Board" button
             regenBtn.addEventListener('click', () => {
-                densitySlider.value = Math.floor(Math.random() * (parseInt(densitySlider.max) - parseInt(densitySlider.min) + 1)) + parseInt(densitySlider.min);
-                icComplexitySlider.value = Math.floor(Math.random() * (parseInt(icComplexitySlider.max) - parseInt(icComplexitySlider.min) + 1)) + parseInt(icComplexitySlider.min);
-                connectorsSlider.value = Math.floor(Math.random() * (parseInt(connectorsSlider.max) - parseInt(connectorsSlider.min) + 1)) + parseInt(connectorsSlider.min);
+                randomizeSettings();
+                showLoading();
+                setTimeout(() => {
+                    generateActual();
+                }, 100);
             });
             
             // New "Regenerate Board" button
             regenerateBoardBtn.addEventListener('click', () => {
                 showLoading();
-                drawEmptyBoard();
-                setTimeout(generateActual, 100);
+                setTimeout(() => {
+                    generateActual();
+                }, 100);
             });
             
             // Sliders no longer trigger regeneration on their own
@@ -1199,28 +1262,17 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
                 exportCanvas.height = exportHeight;
                 const exportCtx = exportCanvas.getContext('2d');
 
-                // 1. Draw the seamless, full-size background pattern on the export canvas.
-                // This ensures the "letterbox" or "pillarbox" area has the same texture.
                 drawBoardTexture(exportCtx, config.primaryColor);
                 drawCopperPour(exportCtx);
 
-                // 2. Calculate the scale factor to fit the source canvas into the export dimensions
-                // while maintaining the aspect ratio.
                 const scaleFactor = Math.min(exportWidth / canvas.width, exportHeight / canvas.height);
-
-                // 3. Calculate the new dimensions of the scaled image.
                 const scaledWidth = canvas.width * scaleFactor;
                 const scaledHeight = canvas.height * scaleFactor;
-
-                // 4. Calculate the top-left position (dx, dy) to center the scaled image.
                 const dx = (exportWidth - scaledWidth) / 2;
                 const dy = (exportHeight - scaledHeight) / 2;
 
-                // 5. Draw the existing, fully rendered main canvas onto the export canvas.
-                // It will be drawn on top of the background, scaled and centered.
                 exportCtx.drawImage(canvas, dx, dy, scaledWidth, scaledHeight);
 
-                // 6. Trigger the download.
                 const link = document.createElement('a');
                 link.href = exportCanvas.toDataURL('image/png', 1.0);
                 link.download = `circuit-wallpaper-${Date.now()}.png`;
@@ -1229,8 +1281,10 @@ o88oo,.__"888,_ _,88P 888   888,888_,o8P'888  888    Y88 `Y8bo,,,o88o
 
             // Initial load logic
             showLoading();
-            drawEmptyBoard();
-            setTimeout(generateActual, 100);
+            randomizeSettings(); // Randomize settings on page load
+            setTimeout(() => {
+                generateActual();
+            }, 100);
         });
     </script>
     <!-- Structured Data -->
